@@ -1,57 +1,65 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "lzw.h"
 
-char *searchCode(DictItem dict[], int dictSize, int code) {
-    for (int i = 0; i <dictSize; i++)
-        if (dict[i].code == code)
-            return dict[i].value;
-    return NULL;
-}
-
-void decompressFile(char *inFile, char *outFile) {
-    FILE *in = fopen(inFile, "rb");
+void decompressFile(const char *input, const char *output) {
+    FILE *in = fopen(input, "rb");
     if (!in) { printf("File input tidak ditemukan!\n"); return; }
-    FILE *out = fopen(outFile, "w");
 
-    DictItem dict[MAX_DICT_SIZE];
-    int dictSize = 256;
+    FILE *out = fopen(output, "wb");
+    if (!out) { printf("Gagal membuka file output!\n"); fclose(in); return; }
 
-    for (int i = 0; i < 256; i++) {
-        dict[i].code = i;
-        dict[i].value[0] = (char)i;
-        dict[i].value[1] = '\0';
+    char *dict[MAX_DICT_SIZE] = {0};
+    int dictSize = 0;
+
+    for (int i = 0; i < INITIAL_DICT_SIZE; i++) {
+        dict[i] = malloc(2);
+        dict[i][0] = (char)i;
+        dict[i][1] = '\0';
+        dictSize++;
     }
 
-    int prevCode, newCode;
-    fread(&prevCode, sizeof(int), 1, in);
-    fprintf(out, "%s", searchCode(dict, dictSize, prevCode));
+    uint16_t prevCode;
+    if (fread(&prevCode, sizeof(uint16_t), 1, in) != 1) {
+        fclose(in);
+        fclose(out);
+        return;
+    }
 
-    char prevStr[MAX_WORD], entry[MAX_WORD];
-    strcpy(prevStr, searchCode(dict, dictSize, prevCode));
+    fwrite(dict[prevCode], 1, strlen(dict[prevCode]), out);
 
-    while (fread(&newCode, sizeof(int), 1, in) == 1) {
-        char *str = searchCode(dict, dictSize, newCode);
+    char prevStr[1024];
+    strcpy(prevStr, dict[prevCode]);
 
-        if (str != NULL) {
-            fprintf(out, "%s", str);
-            sprintf(entry, "%s%c", prevStr, str[0]);
+    uint16_t newCode;
+
+    while (fread(&newCode, sizeof(uint16_t), 1, in) == 1) {
+        char entry[1024];
+
+        if (newCode < dictSize) {
+            strcpy(entry, dict[newCode]);
         } else {
-            sprintf(entry, "%s%c", prevStr, prevStr[0]);
-            fprintf(out, "%s", entry);
+            snprintf(entry, sizeof(entry), "%s%c", prevStr, prevStr[0]);
         }
+
+        fwrite(entry, 1, strlen(entry), out);
 
         if (dictSize < MAX_DICT_SIZE) {
-            dict[dictSize].code = dictSize;
-            strcpy(dict[dictSize].value, entry);
-            dictSize++;
+            char *newEntry = malloc(strlen(prevStr) + 2);
+            snprintf(newEntry, strlen(prevStr) + 2, "%s%c", prevStr, entry[0]);
+            dict[dictSize++] = newEntry;
         }
 
-        strcpy(prevStr, searchCode(dict, dictSize, newCode));
+        strcpy(prevStr, entry);
     }
+
+    for (int i = 0; i < dictSize; i++)
+        free(dict[i]);
 
     fclose(in);
     fclose(out);
-    printf("DEKOMPRESI SELESAI → file output: %s\n", outFile);
+
+    printf("DEKOMPRESI SELESAI → %s\n", output);
 }

@@ -1,15 +1,12 @@
 #ifndef LZW_H
 #define LZW_H
 
-#define MAX_DICT_SIZE 4096
-#define MAX_WORD 50
+#include <stdint.h>
 
-typedef struct {
-    int code;
-    char value[MAX_WORD];
-} DictItem;
+#define MAX_DICT_SIZE 4096     // 12-bit dictionary
+#define INITIAL_DICT_SIZE 256  // ASCII chars
 
-void compressFile(char *inFile, char *outFile);
-void decompressFile(char *inFile, char *outFile);
+void compressFile(const char *input, const char *output);
+void decompressFile(const char *input, const char *output);
 
 #endif

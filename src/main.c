@@ -1,45 +1,33 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "lzw.h"
 
 int main() {
-    int pilihan;
-    char fileIn[100], fileOut[100];
+    int pilih;
+    char in[256], out[256];
 
     do {
-        printf("\n==================== MENU LZW ====================\n");
-        printf("1. Kompres File\n");
-        printf("2. Dekompres File\n");
+        printf("\n===== MENU LZW =====\n");
+        printf("1. Kompres\n");
+        printf("2. Dekompres\n");
         printf("3. Keluar\n");
-        printf("==================================================\n");
-        printf("Pilih menu: ");
-        scanf("%d", &pilihan);
+        printf("Pilih: ");
+        scanf("%d", &pilih);
 
-        switch (pilihan) {
-        case 1:
-            printf("Masukkan nama file input (.txt): ");
-            scanf("%s", fileIn);
-            printf("Masukkan nama file output (.lzw): ");
-            scanf("%s", fileOut);
-            compressFile(fileIn, fileOut);
-            break;
-
-        case 2:
-            printf("Masukkan nama file input (.lzw): ");
-            scanf("%s", fileIn);
-            printf("Masukkan nama file output (.txt): ");
-            scanf("%s", fileOut);
-            decompressFile(fileIn, fileOut);
-            break;
-
-        case 3:
-            printf("Program selesai.\n");
-            break;
-
-        default:
-            printf("Pilihan tidak valid!\n");
+        if (pilih == 1) {
+            printf("File input (.txt): ");
+            scanf("%s", in);
+            printf("File output (.lzw): ");
+            scanf("%s", out);
+            compressFile(in, out);
         }
-    } while (pilihan != 3);
+        else if (pilih == 2) {
+            printf("File input (.lzw): ");
+            scanf("%s", in);
+            printf("File output (.txt): ");
+            scanf("%s", out);
+            decompressFile(in, out);
+        }
+    } while (pilih != 3);
 
     return 0;
 }
