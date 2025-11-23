@@ -35,7 +35,7 @@ int main() {
         // Baca pilihan (masih bisa pakai scanf untuk integer)
         if (scanf("%d", &pilih) != 1) {
             printf("Input tidak valid. Silakan coba lagi.\n");
-            clear_input_buffer(); // Clear buffer after failed scanf
+            clear_input_buffer(); 
             pilih = 0; 
             continue;
         }
