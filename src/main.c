@@ -1,9 +1,23 @@
 #include <stdio.h>
+#include <string.h>
 #include "lzw.h"
+
+void inputPath(char *buffer) {
+    // buang newline dari input sebelumnya
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    fgets(buffer, 260, stdin);
+
+    // hapus newline di akhir string
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n')
+        buffer[len - 1] = '\0';
+}
 
 int main() {
     int pilih;
-    char in[256], out[256];
+    char in[260], out[260];
 
     do {
         printf("\n===== MENU LZW =====\n");
@@ -13,20 +27,35 @@ int main() {
         printf("Pilih: ");
         scanf("%d", &pilih);
 
-        if (pilih == 1) {
+        switch (pilih) {
+        case 1:
             printf("File input (.txt): ");
-            scanf("%s", in);
+            inputPath(in);
+
             printf("File output (.lzw): ");
-            scanf("%s", out);
+            inputPath(out);
+
             compressFile(in, out);
-        }
-        else if (pilih == 2) {
+            break;
+
+        case 2:
             printf("File input (.lzw): ");
-            scanf("%s", in);
+            inputPath(in);
+
             printf("File output (.txt): ");
-            scanf("%s", out);
+            inputPath(out);
+
             decompressFile(in, out);
+            break;
+
+        case 3:
+            printf("Program selesai.\n");
+            break;
+
+        default:
+            printf("Pilihan tidak valid!\n");
         }
+
     } while (pilih != 3);
 
     return 0;
