@@ -47,10 +47,13 @@ int main() {
     char in[MAX_PATH_LEN], out[MAX_PATH_LEN];
 
     do {
-        printf("\n===== MENU LZW =====\n");
+        printf("\n=============================================\n");
+        printf("\n   Kompresi File Text Dengan Algoritma LZW   \n");
+        printf("\n=============================================\n");
         printf("1. Kompres\n");
         printf("2. Dekompres\n");
         printf("3. Keluar\n");
+        printf("\n=============================================\n");
         printf("Pilih: ");
         
         if (scanf("%d", &pilih) != 1) {
@@ -63,9 +66,9 @@ int main() {
         clear_input_buffer(); 
 
         if (pilih == 1) {
-            printf("File input (.txt): ");
+            printf("File input (.txt)   : ");
             get_path_input(in, sizeof(in));
-            printf("File output (otomatis .lzw): ");
+            printf("Nama File output    : ");
             get_path_input(out, sizeof(out));
             
             if (strlen(in) > 0 && strlen(out) > 0) {
@@ -78,9 +81,9 @@ int main() {
 
         }
         else if (pilih == 2) {
-            printf("File input (.lzw): ");
+            printf("File input (.lzw)   : ");
             get_path_input(in, sizeof(in));
-            printf("File output (otomatis .txt): ");
+            printf("Nama File output    : ");
             get_path_input(out, sizeof(out));
             
             if (strlen(in) > 0 && strlen(out) > 0) {
