@@ -11,65 +11,73 @@ void compressFile(const char *input, const char *output);
 void decompressFile(const char *input, const char *output);
 
 
-/*FUNGSI COMPRESS FILE: nanti akan dipanggil dibawah di bagian main*/
 #define MAX_STRING_LEN 1023 
 
+//Fungsi untuk mencari string dalam kamus, pakek strcmp...kalo ketemu direturn index dari kodenya...nanti dipanggil di dalam fungsi compress
 static int findString(char **dict, int size, const char *str) {
+    int len = strlen(str);  // percepat dengan cek panjang dulu
     for (int i = 0; i < size; i++) {
-        if (dict[i] && strcmp(dict[i], str) == 0)
+        if (dict[i] && strlen(dict[i]) == len && strcmp(dict[i], str) == 0)
             return i;
     }
     return -1;
 }
 
+//FUNGSI COMPRESS FILE: nanti akan dipanggil dibawah di bagian main
 void compressFile(const char *input, const char *output) {
+    
+    //baca file input dan bukak file output (pakek wb jadi nanti ke overwritten kalo udah ada nama file output yg sama)
     FILE *in = fopen(input, "rb");
     if (!in) { printf("File input tidak ditemukan!\n"); return; }
 
     FILE *out = fopen(output, "wb");
     if (!out) { printf("Gagal membuka file output!\n"); fclose(in); return; }
 
-    char *dict[MAX_DICT_SIZE] = {0};
+    char *dict[MAX_DICT_SIZE] = {0};       //deklarasi kamus disini
     int dictSize = 0;
 
+    //ini masukkin 256 huruf ascii ke amus    
     for (int i = 0; i < INITIAL_DICT_SIZE; i++) {
-        dict[i] = malloc(2);
-        dict[i][0] = (char)i;
+        dict[i] = malloc(2);        //ukuran 2 karana tambpung huruf dan \0....jadi kita punya array dict berukuran 256 yang masing2 ukurannya 2 dan isinya adalah huruf ascii
+        dict[i][0] = (char)i;       //char dari angka langsung nyammbung ke huuruf korsepondennya
         dict[i][1] = '\0';
         dictSize++;
     }
 
-    int c = fgetc(in);
-    if (c == EOF) {
+    int c = fgetc(in);      //baca karakter pertama
+    if (c == EOF) {         //pengecekan jaga2 jika file input kosong
         for (int i = 0; i < dictSize; i++) free(dict[i]);
-        fclose(in); fclose(out); return;
+        fclose(in); 
+        fclose(out); 
+        return;
     }
 
     char w[MAX_STRING_LEN + 1] = {0};
-    w[0] = c; w[1] = '\0';
+    w[0] = c; w[1] = '\0';              //masukan char pertama yang di dalam c tadi ke array w
 
-    while ((c = fgetc(in)) != EOF) {
+    while ((c = fgetc(in)) != EOF) {        //disini loopin nilai dari c yang lanjut2 trus ke char selanjutnya
         char wc[MAX_STRING_LEN + 1];
 
-        if (strlen(w) >= MAX_STRING_LEN) {
+        if (strlen(w) >= MAX_STRING_LEN) {          //cek jika panjang string w udah terlalu boros maka kita resest...w ini fungsinya hanya untukpengecekan per huruf..bukan kamusnya jadi gapapa di reset
             int code = findString(dict, dictSize, w);
-            uint16_t outcode = (uint16_t)code;
-            fwrite(&outcode, sizeof(uint16_t), 1, out);
-            w[0] = (char)c; w[1] = '\0';
+            uint16_t outcode = (uint16_t)code;              //ubah ke 16 bit
+            fwrite(&outcode, sizeof(uint16_t), 1, out);     
+            w[0] = (char)c; w[1] = '\0';                    //print ulang lagi dari awal isi dari w nya
             continue;
         }
 
+        //INI INTI DARI ALGORITMA LZW
         snprintf(wc, sizeof(wc), "%s%c", w, (char)c);
-        if (findString(dict, dictSize, wc) != -1) {
-            strcpy(w, wc);
+        if (findString(dict, dictSize, wc) != -1) {   //c berubah jadi char selanjutnya, w tetap char pertama yg dibaca, lalu cari apakah wc ada di kamus
+            strcpy(w, wc);                              //kalau ada di kamus maka pola diperpanjang
         } else {
-            int code = findString(dict, dictSize, w);
-            uint16_t outcode = (uint16_t)code;
-            fwrite(&outcode, sizeof(uint16_t), 1, out);
+            int code = findString(dict, dictSize, w);       //cari dalam kamus bagian yang ga ada tu di index mana
+            uint16_t outcode = (uint16_t)code;              //dengan index itu ubah ke 16 bit
+            fwrite(&outcode, sizeof(uint16_t), 1, out);     //print ke file outpur yang sudah dikompresi
 
-            if (dictSize < MAX_DICT_SIZE) {
-                dict[dictSize] = malloc(strlen(wc) + 1);
-                strcpy(dict[dictSize], wc);
+            if (dictSize < MAX_DICT_SIZE) {                 //cek ukuran kamus udah penuh belum
+                dict[dictSize] = malloc(strlen(wc) + 1);    //malloc untuk string wc  
+                strcpy(dict[dictSize], wc);                 //masukin wc ke dalam kamus
                 dictSize++;
             }
             w[0] = (char)c;
@@ -77,18 +85,20 @@ void compressFile(const char *input, const char *output) {
         }
     }
 
-    int code = findString(dict, dictSize, w);
-    uint16_t outcode = (uint16_t)code;
-    fwrite(&outcode, sizeof(uint16_t), 1, out);
+    int code = findString(dict, dictSize, w);            //setelah program selesai, ada string terakhir di w yang ga masuk
+    uint16_t outcode = (uint16_t)code;                  //ubah ke 16 bit
+    fwrite(&outcode, sizeof(uint16_t), 1, out);           //masukkan ke file output
 
-    for (int i = 0; i < dictSize; i++) free(dict[i]);
-    fclose(in); fclose(out);
+    for (int i = 0; i < dictSize; i++) free(dict[i]);       //terakhir jangan lupa bebasin dict, setiap malloc harus ada free
+    fclose(in); fclose(out);                                
 
     printf("KOMPRESI SELESAI → %s\n", output);
 }
 
 /*FUNGSI DECOMPRESS FILE: nanti akan dipanggil dibawah di bagian main*/
 void decompressFile(const char *input, const char *output) {
+
+    //baca file input dan buka file output...kalo file outpur malah sudah ada maka akan overwritten
     FILE *in = fopen(input, "rb");
     if (!in) { printf("File input tidak ditemukan!\n"); return; }
 
@@ -98,7 +108,7 @@ void decompressFile(const char *input, const char *output) {
     char *dict[MAX_DICT_SIZE] = {0};
     int dictSize = 0;
 
-    for (int i = 0; i < INITIAL_DICT_SIZE; i++) {
+    for (int i = 0; i < INITIAL_DICT_SIZE; i++) {           //inisialisasi kamus 256 ascii, sama kayak yang di bagian compress
         dict[i] = malloc(2);
         dict[i][0] = (char)i;
         dict[i][1] = '\0';
@@ -131,7 +141,8 @@ void decompressFile(const char *input, const char *output) {
             currentEntry = dict[newCode];
         } else if (newCode == dictSize) {
             isKSK = 1;
-            entry = realloc(entry, strlen(prevStr) + 2);
+            if (entry) free(entry);
+            entry = malloc(strlen(prevStr) + 2);
             strcpy(entry, prevStr);
             entry[strlen(prevStr)] = prevStr[0];
             entry[strlen(prevStr) + 1] = '\0';
@@ -140,8 +151,6 @@ void decompressFile(const char *input, const char *output) {
             printf("Error: Kode %u di luar batas!\n", newCode);
             break;
         }
-
-        fwrite(currentEntry, 1, strlen(currentEntry), out);
 
         if (dictSize < MAX_DICT_SIZE) {
             char *newEntry = malloc(strlen(prevStr) + 2);
@@ -153,6 +162,7 @@ void decompressFile(const char *input, const char *output) {
 
         free(prevStr);
         prevStr = strdup(currentEntry);
+        fwrite(prevStr, 1, strlen(prevStr), out);
     }
 
     for (int i = 0; i < dictSize; i++) free(dict[i]);
@@ -164,6 +174,7 @@ void decompressFile(const char *input, const char *output) {
 
     printf("DEKOMPRESI SELESAI → %s\n", output);
 }
+
 
 
 /*    MAIN CODE DISINI : Tempat Tampilan Utama Terminal dan Pemanggilan Fungsi Compress dan Decompress*/
@@ -194,9 +205,9 @@ int main() {
         printf("\n=============================================");
         printf("\n   Kompresi File Text Dengan Algoritma LZW   \n");
         printf("=============================================\n");
-        printf("1. Kompres");
-        printf("2. Dekompres");
-        printf("3. Keluar");
+        printf("1. Kompres\n");
+        printf("2. Dekompres\n");
+        printf("3. Keluar\n");
         printf("=============================================\n");
         printf("Pilih: ");
 
