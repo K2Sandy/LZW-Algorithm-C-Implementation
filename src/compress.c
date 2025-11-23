@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "lzw.h"
 
+// Batas string untuk mencegah buffer overflow pada array tetap
+#define MAX_STRING_LEN 1023 
+
 static int findString(char **dict, int size, const char *str) {
     for (int i = 0; i < size; i++) {
         if (dict[i] && strcmp(dict[i], str) == 0)
@@ -22,8 +25,9 @@ void compressFile(const char *input, const char *output) {
     char *dict[MAX_DICT_SIZE] = {0};
     int dictSize = 0;
 
+    // Inisialisasi Kamus
     for (int i = 0; i < INITIAL_DICT_SIZE; i++) {
-        dict[i] = malloc(2);
+        dict[i] = malloc(2); // Ukuran 1 karakter + \0
         dict[i][0] = (char)i;
         dict[i][1] = '\0';
         dictSize++;
@@ -31,40 +35,65 @@ void compressFile(const char *input, const char *output) {
 
     int c = fgetc(in);
     if (c == EOF) {
+        // Bebaskan kamus sebelum keluar
+        for (int i = 0; i < dictSize; i++) free(dict[i]);
         fclose(in);
         fclose(out);
         return;
     }
 
-    char w[1024] = {0};
+    char w[MAX_STRING_LEN + 1] = {0};
     w[0] = (char)c;
     w[1] = '\0';
 
     while ((c = fgetc(in)) != EOF) {
-        char wc[1024];
-        snprintf(wc, sizeof(wc), "%s%c", w, (char)c);
-
-        if (findString(dict, dictSize, wc) != -1) {
-            strcpy(w, wc);
-        } else {
+        char wc[MAX_STRING_LEN + 1];
+        
+        // Pengecekan batas untuk wc
+        if (strlen(w) >= MAX_STRING_LEN) {
+            // String w sudah terlalu panjang untuk array wc, kompres w sekarang
             int code = findString(dict, dictSize, w);
             uint16_t outcode = (uint16_t)code;
             fwrite(&outcode, sizeof(uint16_t), 1, out);
 
+            // Reset w menjadi karakter c saat ini
+            w[0] = (char)c;
+            w[1] = '\0';
+            continue; // Lanjutkan loop
+        }
+        
+        // Buat string wc
+        snprintf(wc, sizeof(wc), "%s%c", w, (char)c);
+
+        if (findString(dict, dictSize, wc) != -1) {
+            // wc ada di kamus, perbarui w
+            strcpy(w, wc);
+        } else {
+            // wc tidak ada di kamus, kirim kode untuk w
+            int code = findString(dict, dictSize, w);
+            uint16_t outcode = (uint16_t)code;
+            fwrite(&outcode, sizeof(uint16_t), 1, out);
+
+            // Tambahkan wc ke kamus jika belum penuh
             if (dictSize < MAX_DICT_SIZE) {
+                // Perbaikan: Alokasi memori yang benar
                 dict[dictSize] = malloc(strlen(wc) + 1);
                 strcpy(dict[dictSize], wc);
                 dictSize++;
             }
+            
+            // Set w menjadi karakter c saat ini
             w[0] = (char)c;
             w[1] = '\0';
         }
     }
 
+    // Tulis kode terakhir untuk w
     int code = findString(dict, dictSize, w);
     uint16_t outcode = (uint16_t)code;
     fwrite(&outcode, sizeof(uint16_t), 1, out);
 
+    // Bebaskan semua memori kamus
     for (int i = 0; i < dictSize; i++)
         free(dict[i]);
 
