@@ -6,7 +6,6 @@
 
 // Batas string untuk mencegah buffer overflow pada array tetap
 #define MAX_STRING_LEN 1023 
-
 static int findString(char **dict, int size, const char *str) {
     for (int i = 0; i < size; i++) {
         if (dict[i] && strcmp(dict[i], str) == 0)
