@@ -13,13 +13,34 @@ void clear_input_buffer() {
 // Helper function to read a path, handling spaces and newlines
 void get_path_input(char *buffer, size_t size) {
     if (fgets(buffer, size, stdin) == NULL) {
-        buffer[0] = '\0'; // Set to empty string on error
+        buffer[0] = '\0'; 
         return;
     }
     
     // Remove the newline or carriage return character from the end
     buffer[strcspn(buffer, "\r\n")] = 0;
 }
+
+// FUNGSI BARU: Menambahkan ekstensi jika belum ada
+void add_extension(char *filename, const char *ext, size_t max_len) {
+    size_t file_len = strlen(filename);
+    size_t ext_len = strlen(ext);
+
+    // Cek apakah ekstensi sudah ada
+    if (file_len >= ext_len && strcmp(filename + file_len - ext_len, ext) == 0) {
+        return; // Ekstensi sudah ada, tidak perlu ditambahkan
+    }
+
+    // Cek apakah ada cukup ruang di buffer
+    if (file_len + ext_len + 1 <= max_len) {
+        // Tambahkan ekstensi
+        strcat(filename, ext);
+    } else {
+        // Penanganan error: buffer penuh
+        printf("Peringatan: Nama file terlalu panjang, ekstensi tidak ditambahkan.\n");
+    }
+}
+
 
 int main() {
     int pilih;
@@ -32,7 +53,6 @@ int main() {
         printf("3. Keluar\n");
         printf("Pilih: ");
         
-        // Baca pilihan (masih bisa pakai scanf untuk integer)
         if (scanf("%d", &pilih) != 1) {
             printf("Input tidak valid. Silakan coba lagi.\n");
             clear_input_buffer(); 
@@ -40,17 +60,17 @@ int main() {
             continue;
         }
         
-        // !!! PENTING: Clear buffer setelah sukses membaca integer !!!
         clear_input_buffer(); 
 
         if (pilih == 1) {
             printf("File input (.txt): ");
             get_path_input(in, sizeof(in));
-            printf("File output (.lzw): ");
+            printf("File output (otomatis .lzw): ");
             get_path_input(out, sizeof(out));
             
             if (strlen(in) > 0 && strlen(out) > 0) {
-                // If the path is successfully read, try to compress
+                // Tambahkan .lzw ke output file
+                add_extension(out, ".lzw", sizeof(out));
                 compressFile(in, out);
             } else {
                 printf("Jalur file tidak boleh kosong.\n");
@@ -60,11 +80,12 @@ int main() {
         else if (pilih == 2) {
             printf("File input (.lzw): ");
             get_path_input(in, sizeof(in));
-            printf("File output (.txt): ");
+            printf("File output (otomatis .txt): ");
             get_path_input(out, sizeof(out));
             
             if (strlen(in) > 0 && strlen(out) > 0) {
-                // If the path is successfully read, try to decompress
+                // Tambahkan .txt ke output file
+                add_extension(out, ".txt", sizeof(out));
                 decompressFile(in, out);
             } else {
                 printf("Jalur file tidak boleh kosong.\n");
