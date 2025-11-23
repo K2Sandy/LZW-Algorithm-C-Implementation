@@ -95,7 +95,7 @@ void compressFile(const char *input, const char *output) {
     printf("KOMPRESI SELESAI → %s\n", output);
 }
 
-/*FUNGSI DECOMPRESS FILE: nanti akan dipanggil dibawah di bagian main*/
+//FUNGSI DECOMPRESS FILE: nanti akan dipanggil dibawah di bagian main
 void decompressFile(const char *input, const char *output) {
 
     //baca file input dan buka file output...kalo file outpur malah sudah ada maka akan overwritten
@@ -115,31 +115,36 @@ void decompressFile(const char *input, const char *output) {
         dictSize++;
     }
 
-    uint16_t prevCode;
-    if (fread(&prevCode, sizeof(uint16_t), 1, in) != 1) {
-        for (int i = 0; i < dictSize; i++) free(dict[i]);
-        fclose(in); fclose(out); return;
+    uint16_t prevCode;      
+    if (fread(&prevCode, sizeof(uint16_t), 1, in) != 1) {       //fread membaca 2 byte pertama dari file dan memasukkannya ke prevCode
+        for (int i = 0; i < dictSize; i++) 
+            free(dict[i]);                                      //bersihin memori kamus sebelumnya
+        fclose(in); 
+        fclose(out); 
+        return;
     }
 
-    if (prevCode >= dictSize) {
+    if (prevCode >= dictSize) {                             //misal Jika kode pertama hasil kompresi berada di luar kamus awal (256 entri), maka file itu pasti corrupt
         printf("Error: Kode pertama tidak valid!\n");
         for (int i = 0; i < dictSize; i++) free(dict[i]);
-        fclose(in); fclose(out); return;
+            fclose(in);
+            fclose(out);
+            return;
     }
 
-    char *prevStr = strdup(dict[prevCode]);
-    fwrite(prevStr, 1, strlen(prevStr), out);
+    char *prevStr = strdup(dict[prevCode]);               //strdup itu untuk duplicate string, pindahin ke prevstr biar ga ganggu kamus aslinya      
+    fwrite(prevStr, 1, strlen(prevStr), out);              //tulis string pertama ke file hasil dekompresi
 
-    uint16_t newCode;
+    uint16_t newCode;           //deklar var 16bit baru
     char *entry = NULL;
 
-    while (fread(&newCode, sizeof(uint16_t), 1, in) == 1) {
-        char *currentEntry;
-        int isKSK = 0;
+    while (fread(&newCode, sizeof(uint16_t), 1, in) == 1) {             //mulai looping baca setiap kode 16 bit dri file
+        char *currentEntry;    //ini variabel wakilin newcode
+        int isKSK = 0;   //ini variabel untuk kasus ksk
 
-        if (newCode < dictSize) {
-            currentEntry = dict[newCode];
-        } else if (newCode == dictSize) {
+        if (newCode < dictSize) {                   //kalo newcode dibawah angka 255 maka kan sudah pasti ada di kamus
+            currentEntry = dict[newCode];           //masukin ke char currententry
+        } else if (newCode == dictSize) {            //penanganan kasus ksk
             isKSK = 1;
             if (entry) free(entry);
             entry = malloc(strlen(prevStr) + 2);
@@ -177,24 +182,26 @@ void decompressFile(const char *input, const char *output) {
 
 
 
-/*    MAIN CODE DISINI : Tempat Tampilan Utama Terminal dan Pemanggilan Fungsi Compress dan Decompress*/
+//    MAIN CODE DISINI : Tempat Tampilan Utama Terminal dan Pemanggilan Fungsi Compress dan Decompress
 #define MAX_PATH_LEN 256
 
-void clear_input_buffer() {
+void clear_input_buffer() {             //fungsi untuk bebasin  sisa input distdin, nanti dipanggil di int main
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
-void get_path_input(char *buffer, size_t size) {
-    if (fgets(buffer, size, stdin) == NULL) buffer[0] = '\0';
-    buffer[strcspn(buffer, "\r\n")] = 0;
+void get_path_input(char *buffer, size_t size) {        
+    if (fgets(buffer, size, stdin) == NULL) buffer[0] = '\0';       //simpan input pengguna dalam buffer
+    buffer[strcspn(buffer, "\r\n")] = 0;                //biar enter setelah input ga keca
 }
 
-void add_extension(char *filename, const char *ext, size_t max_len) {
+void add_extension(char *filename, const char *ext, size_t max_len) {           //nanti di main diubah jadi txt ato lzw
     size_t file_len = strlen(filename), ext_len = strlen(ext);
-    if (file_len >= ext_len && strcmp(filename + file_len - ext_len, ext) == 0) return;
-    if (file_len + ext_len + 1 <= max_len) strcat(filename, ext);
-    else printf("Peringatan: Nama file terlalu panjang, ekstensi tidak ditambahkan.\n");
+    if (file_len >= ext_len && strcmp(filename + file_len - ext_len, ext) == 0) 
+        return;                                                              //cek kalo udah ada txt ato lzw nya
+    if (file_len + ext_len + 1 <= max_len)                  //kalo blm cek muat ga
+        strcat(filename, ext);                              //kalo muat tambahin extension
+    else printf("Peringatan: Nama file terlalu panjang, ekstensi tidak ditambahkan.\n");       //ga muat gausah
 }
 
 int main() {
@@ -219,6 +226,7 @@ int main() {
         }
         clear_input_buffer();
 
+        //menu main ya memanggil fungsi2 yang sudah dijelaskan diatas
         if (pilih == 1) {
             printf("File input (.txt)   : ");
             get_path_input(in, sizeof(in));
