@@ -98,8 +98,12 @@ void compressFile(const char *input, const char *output) {
     free(dict[i]);                      //setiap malloc harus ada free
     fclose(in); fclose(out);                                
 
+<<<<<<< HEAD
     printf("\n=============================================");                     //
     printf("KOMPRESI SELESAI → %s\n", output);
+=======
+    printf("KOMPRESI SELESAI %s\n", output);
+>>>>>>> bac97bd93ab94f4db02228ec6a127c4cd8bd9e6e
 }
 
 //FUNGSI DECOMPRESS FILE: nanti akan dipanggil dibawah di bagian main                       
@@ -188,8 +192,12 @@ void decompressFile(const char *input, const char *output) {
     fclose(in);
     fclose(out);
 
+<<<<<<< HEAD
     printf("\n=============================================");                     //
     printf("DEKOMPRESI SELESAI → %s\n", output);
+=======
+    printf("DEKOMPRESI SELESAI %s\n", output);
+>>>>>>> bac97bd93ab94f4db02228ec6a127c4cd8bd9e6e
 }
 
 

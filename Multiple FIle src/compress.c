@@ -6,9 +6,11 @@
 
 // Batas string untuk mencegah buffer overflow pada array tetap
 #define MAX_STRING_LEN 1023 
+
 static int findString(char **dict, int size, const char *str) {
+    int len = (int)strlen(str);
     for (int i = 0; i < size; i++) {
-        if (dict[i] && strcmp(dict[i], str) == 0)
+        if (dict[i] && (int)strlen(dict[i]) == len && strcmp(dict[i], str) == 0)
             return i;
     }
     return -1;
@@ -27,6 +29,11 @@ void compressFile(const char *input, const char *output) {
     // Inisialisasi Kamus
     for (int i = 0; i < INITIAL_DICT_SIZE; i++) {
         dict[i] = malloc(2); // Ukuran 1 karakter + \0
+        if (!dict[i]) { printf("Error: malloc gagal\n"); /* cleanup */ 
+            for (int j = 0; j < i; j++) free(dict[j]);
+            fclose(in); fclose(out);
+            return;
+        }
         dict[i][0] = (char)i;
         dict[i][1] = '\0';
         dictSize++;
@@ -77,8 +84,13 @@ void compressFile(const char *input, const char *output) {
             if (dictSize < MAX_DICT_SIZE) {
                 // Perbaikan: Alokasi memori yang benar
                 dict[dictSize] = malloc(strlen(wc) + 1);
-                strcpy(dict[dictSize], wc);
-                dictSize++;
+                if (dict[dictSize]) {
+                    strcpy(dict[dictSize], wc);
+                    dictSize++;
+                } else {
+                    // Jika malloc gagal, kita tetap melanjutkan (dict tidak bertambah)
+                    printf("Peringatan: malloc gagal saat menambah kamus, mengabaikan entri baru.\n");
+                }
             }
             
             // Set w menjadi karakter c saat ini

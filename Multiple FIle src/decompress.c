@@ -17,6 +17,12 @@ void decompressFile(const char *input, const char *output) {
     // Inisialisasi Kamus
     for (int i = 0; i < INITIAL_DICT_SIZE; i++) {
         dict[i] = malloc(2);
+        if (!dict[i]) {
+            printf("Error: malloc gagal saat inisialisasi kamus\n");
+            for (int j = 0; j < i; j++) free(dict[j]);
+            fclose(in); fclose(out);
+            return;
+        }
         dict[i][0] = (char)i;
         dict[i][1] = '\0';
         dictSize++;
@@ -41,31 +47,42 @@ void decompressFile(const char *input, const char *output) {
     }
 
     // Tulis string pertama (W)
-    char *prevStr = strdup(dict[prevCode]); // Alokasi dinamis untuk prevStr
+    char *prevStr = _strdup(dict[prevCode]); // gunakan _strdup untuk kompatibilitas MSVC
+    if (!prevStr) {
+        printf("Error: strdup gagal saat alokasi prevStr\n");
+        for (int i = 0; i < dictSize; i++) free(dict[i]);
+        fclose(in); fclose(out);
+        return;
+    }
     fwrite(prevStr, 1, strlen(prevStr), out);
 
     uint16_t newCode;
     
-    // Alokasi dinamis untuk entry (berpotensi tumbuh besar)
+    // Buffer sementara untuk kasus K-S-K
     char *entry = NULL;
+    size_t entry_buf_len = 0;
 
     while (fread(&newCode, sizeof(uint16_t), 1, in) == 1) {
         
-        char *currentEntry; // Pointer sementara
+        char *currentEntry = NULL; // Pointer sementara
         int isKSK = 0;      // Flag untuk kasus K-S-K
 
-        if (newCode < dictSize) {
+        if (newCode < (uint16_t)dictSize) {
             // Kasus normal
             currentEntry = dict[newCode];
-        } else if (newCode == dictSize) {
+        } else if (newCode == (uint16_t)dictSize) {
             // Kasus K-S-K (Kode baru yang baru saja dibuat)
-            // entry = prevStr + prevStr[0]
             isKSK = 1;
-            
-            // Alokasi memori untuk K-S-K (panjang prevStr + 2 untuk karakter pertama + \0)
-            entry = realloc(entry, strlen(prevStr) + 2);
-            if (!entry) { /* Penanganan error */ break; } 
-            
+            size_t need = strlen(prevStr) + 2;
+            if (entry_buf_len < need) {
+                char *tmp = realloc(entry, need);
+                if (!tmp) {
+                    printf("Error: realloc gagal saat membuat entry K-S-K\n");
+                    break;
+                }
+                entry = tmp;
+                entry_buf_len = need;
+            }
             strcpy(entry, prevStr);
             entry[strlen(prevStr)] = prevStr[0];
             entry[strlen(prevStr) + 1] = '\0';
@@ -81,11 +98,12 @@ void decompressFile(const char *input, const char *output) {
 
         // Tambahkan string baru (P + C) ke kamus
         if (dictSize < MAX_DICT_SIZE) {
-            // C = karakter pertama dari currentEntry
-            
             // Alokasi memori untuk entri kamus baru (panjang prevStr + 2)
             char *newEntry = malloc(strlen(prevStr) + 2);
-            if (!newEntry) { /* Penanganan error */ break; }
+            if (!newEntry) {
+                printf("Error: malloc gagal saat menambah entri kamus\n");
+                break;
+            }
 
             // Buat P + C
             strcpy(newEntry, prevStr);
@@ -94,19 +112,16 @@ void decompressFile(const char *input, const char *output) {
 
             dict[dictSize++] = newEntry;
         }
-        
+
         // Perbarui prevStr untuk iterasi berikutnya
-        // Bebaskan prevStr lama, dan alokasikan/salin prevStr baru
         free(prevStr); 
-        prevStr = strdup(currentEntry);
-        
-        // Jika K-S-K, kita harus membebaskan memori 'entry' karena strdup sudah menyalinnya
-        if (isKSK) {
-            // Jika KSK, entry adalah buffer sementara yang dialokasikan ulang/baru
-            // Biarkan 'entry' pointer tetap ada untuk realloc di iterasi berikutnya
-            // Namun, kita tidak perlu memanggil free(entry) di sini karena kita akan realloc/reuse.
-            // Biarkan free(entry) di akhir jika entry bukan NULL.
+        prevStr = _strdup(currentEntry);
+        if (!prevStr) {
+            printf("Error: strdup gagal saat update prevStr\n");
+            break;
         }
+
+        // note: kita tidak free(entry) di sini karena kita reuse buffer entry dengan realloc
     }
 
     // Bebaskan semua memori kamus
