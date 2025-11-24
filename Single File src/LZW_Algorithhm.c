@@ -6,6 +6,7 @@
 
 #define MAX_DICT_SIZE 4096     // kamus dictionary 12 bit
 #define INITIAL_DICT_SIZE 256  // Karakter ASCII
+#define MAX_PATH_LEN 256
 
 void compressFile(const char *input, const char *output);
 void decompressFile(const char *input, const char *output);
@@ -28,10 +29,10 @@ void compressFile(const char *input, const char *output) {
     
     //baca file input dan bukak file output 
     FILE *in = fopen(input, "rb");
-    if (!in) { printf("File input tidak ditemukan!\n"); return; }
+    if (!in) { printf("File input tidak ditemukan\n"); return; }
 
     FILE *out = fopen(output, "wb"); //(pakek wb jadi nanti ke overwritten kalo udah ada nama file output yg sama)
-    if (!out) { printf("Gagal membuka file output!\n"); fclose(in); return; }
+    if (!out) { printf("Gagal membuka file output\n"); fclose(in); return; }
 
     char *dict[MAX_DICT_SIZE] = {0};       //deklarasi kamus disini
     int dictSize = 0;
@@ -105,10 +106,10 @@ void decompressFile(const char *input, const char *output) {
 
     //baca file input dan buka file output...kalo file outpur sudah ada maka akan overwritten
     FILE *in = fopen(input, "rb");
-    if (!in) { printf("File input tidak ditemukan!\n"); return; }
+    if (!in) { printf("File input tidak ditemukan\n"); return; }
 
     FILE *out = fopen(output, "wb");
-    if (!out) { printf("Gagal membuka file output!\n"); fclose(in); return; }
+    if (!out) { printf("Gagal membuka file output\n"); fclose(in); return; }
 
     char *dict[MAX_DICT_SIZE] = {0};
     int dictSize = 0;
@@ -121,35 +122,38 @@ void decompressFile(const char *input, const char *output) {
     }
 
     uint16_t prevCode;      
-    if (fread(&prevCode, sizeof(uint16_t), 1, in) != 1) {       //fread membaca 2 byte pertama dari file dan memasukkannya ke prevCode
+    if (fread(&prevCode, sizeof(uint16_t), 1, in) != 1) {  //fread membaca 2 byte pertama dari file 
+                                                        //dan memasukkannya ke prevCode
         for (int i = 0; i < dictSize; i++) 
-            free(dict[i]);                                      //bersihin memori kamus sebelumnya
+            free(dict[i]);                                //bersihin memori kamus sebelumnya
         fclose(in); 
         fclose(out); 
         return;
     }
 
-    if (prevCode >= dictSize) {                             //misal Jika kode pertama hasil kompresi berada di luar kamus awal (256 entri), maka file itu pasti corrupt
-        printf("Error: Kode pertama tidak valid!\n");
+    if (prevCode >= dictSize) {   //misal Jika kode pertama hasil kompresi berada di luar kamus awal (256 entri),
+                                  //maka file itu pasti corrupt
+        printf("Error: Kode pertama tidak valid\n");
         for (int i = 0; i < dictSize; i++) free(dict[i]);
             fclose(in);
             fclose(out);
             return;
     }
 
-    char *prevStr = strdup(dict[prevCode]);               //strdup itu untuk duplicate string, pindahin ke prevstr biar ga ganggu kamus aslinya      
-    fwrite(prevStr, 1, strlen(prevStr), out);              //tulis string pertama ke file hasil dekompresi
+    char *prevStr = strdup(dict[prevCode]);    //strdup itu untuk duplicate string, 
+                                               //pindahin ke prevstr biar ga ganggu kamus aslinya      
+    fwrite(prevStr, 1, strlen(prevStr), out);  //tulis string pertama ke file hasil dekompresi
 
     uint16_t newCode;           //deklar var 16bit baru
     char *entry = NULL;
 
-    while (fread(&newCode, sizeof(uint16_t), 1, in) == 1) {             //mulai looping baca setiap kode 16 bit dri file
+    while (fread(&newCode, sizeof(uint16_t), 1, in) == 1) {   //mulai looping baca setiap kode 16 bit dri file     
         char *currentEntry;    //ini variabel wakilin newcode
         int isKSK = 0;   //ini variabel untuk kasus ksk
 
-        if (newCode < dictSize) {                   //kalo newcode dibawah angka 255 maka kan sudah pasti ada di kamus
-            currentEntry = dict[newCode];           //masukin ke char currententry
-        } else if (newCode == dictSize) {            //penanganan kasus ksk
+        if (newCode < dictSize) {       //kalo newcode dibawah angka 255 maka kan sudah pasti ada di kamus
+            currentEntry = dict[newCode];    //masukin bentuk hurufnya ke char currententry
+        } else if (newCode == dictSize) {    //penanganan kasus ksk
             isKSK = 1;
             if (entry) free(entry);
             entry = malloc(strlen(prevStr) + 2);
@@ -158,7 +162,7 @@ void decompressFile(const char *input, const char *output) {
             entry[strlen(prevStr) + 1] = '\0';
             currentEntry = entry;
         } else {
-            printf("Error: Kode %u di luar batas!\n", newCode);
+            printf("Error: Kode %u di luar batas\n", newCode);
             break;
         }
 
@@ -176,7 +180,7 @@ void decompressFile(const char *input, const char *output) {
         fwrite(prevStr, 1, strlen(prevStr), out);
     }
 
-    for (int i = 0; i < dictSize; i++) free(dict[i]);
+    for (int i = 0; i < dictSize; i++) free(dict[i]);                                             
     if (prevStr) free(prevStr);
     if (entry) free(entry);
 
@@ -189,7 +193,7 @@ void decompressFile(const char *input, const char *output) {
 
 
 //    MAIN CODE DISINI : Tempat Tampilan Utama Terminal dan Pemanggilan Fungsi Compress dan Decompress
-#define MAX_PATH_LEN 256
+
 
 void clear_input_buffer() {             //fungsi untuk bebasin  sisa input distdin
     int c;
@@ -225,7 +229,7 @@ int main() {
         printf("Pilih: ");
 
         if (scanf("%d", &pilih) != 1) {
-            printf("Input tidak valid!\n");                                           
+            printf("Input tidak valid\n");                                           
             clear_input_buffer();
             pilih = 0; 
             continue;
