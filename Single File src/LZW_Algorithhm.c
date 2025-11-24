@@ -89,20 +89,21 @@ void compressFile(const char *input, const char *output) {
         }
     }
 
-    int code = findString(dict, dictSize, w);  //setelah program selesai, ada string terakhir di w yang ga masuk
+    int code = findString(dict, dictSize, w);  //ada string terakhir di w yang ga masuk
     uint16_t outcode = (uint16_t)code;      //ubah ke 16 bit
     fwrite(&outcode, sizeof(uint16_t), 1, out);  //masukkan ke file output
 
-    for (int i = 0; i < dictSize; i++) free(dict[i]); //terakhir jangan lupa bebasin dict, setiap malloc harus ada free
+    for (int i = 0; i < dictSize; i++)  //terakhir jangan lupa bebasin dict,
+    free(dict[i]);                      //setiap malloc harus ada free
     fclose(in); fclose(out);                                
 
     printf("KOMPRESI SELESAI → %s\n", output);
 }
 
-//FUNGSI DECOMPRESS FILE: nanti akan dipanggil dibawah di bagian main
-void decompressFile(const char *input, const char *output) {
+//FUNGSI DECOMPRESS FILE: nanti akan dipanggil dibawah di bagian main                       
+void decompressFile(const char *input, const char *output) {                               
 
-    //baca file input dan buka file output...kalo file outpur malah sudah ada maka akan overwritten
+    //baca file input dan buka file output...kalo file outpur sudah ada maka akan overwritten
     FILE *in = fopen(input, "rb");
     if (!in) { printf("File input tidak ditemukan!\n"); return; }
 
@@ -161,16 +162,17 @@ void decompressFile(const char *input, const char *output) {
             break;
         }
 
-        if (dictSize < MAX_DICT_SIZE) {
-            char *newEntry = malloc(strlen(prevStr) + 2);
-            strcpy(newEntry, prevStr);
-            newEntry[strlen(prevStr)] = currentEntry[0];
+        if (dictSize < MAX_DICT_SIZE) {                 //selama kamus belum penuh, jalankan
+            char *newEntry = malloc(strlen(prevStr) + 2);   //buat lokasi memori untuk huruf setelahnya
+            strcpy(newEntry, prevStr);                  //copy kode sblumnya, masukin ke kamus
+            newEntry[strlen(prevStr)] = currentEntry[0];    
             newEntry[strlen(prevStr) + 1] = '\0';
-            dict[dictSize++] = newEntry;
+            dict[dictSize++] = newEntry;        //perluas kamus
         }
 
         free(prevStr);
-        prevStr = strdup(currentEntry);
+        prevStr = strdup(currentEntry);        //isi yang sekarang, balik lagi ke prevstr...
+                                                //karena nanti currenentry berubah jadi char slanjutnya
         fwrite(prevStr, 1, strlen(prevStr), out);
     }
 
@@ -210,10 +212,10 @@ void add_extension(char *filename, const char *ext, size_t max_len) {
 
 int main() {
     int pilih;
-    char in[MAX_PATH_LEN], out[MAX_PATH_LEN];
+    char in[MAX_PATH_LEN], out[MAX_PATH_LEN];                                   
 
     do {
-        printf("\n=============================================");
+        printf("\n=============================================");                     //
         printf("\n   Kompresi File Text Dengan Algoritma LZW   \n");
         printf("=============================================\n");
         printf("1. Kompres\n");
@@ -223,7 +225,7 @@ int main() {
         printf("Pilih: ");
 
         if (scanf("%d", &pilih) != 1) {
-            printf("Input tidak valid!\n");
+            printf("Input tidak valid!\n");                                           
             clear_input_buffer();
             pilih = 0; 
             continue;
@@ -249,9 +251,9 @@ int main() {
             if (strlen(in) && strlen(out)) {
                 add_extension(out, ".txt", sizeof(out));
                 decompressFile(in, out);
-            } else printf("Jalur file tidak boleh kosong.\n");
+            } else printf("Jalur file tidak boleh kosong.\n");      
         }
-    } while (pilih != 3);
+    } while (pilih != 3);                                           
 
     return 0;
 }
