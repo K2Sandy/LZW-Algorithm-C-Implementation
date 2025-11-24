@@ -98,6 +98,7 @@ void compressFile(const char *input, const char *output) {
     free(dict[i]);                      //setiap malloc harus ada free
     fclose(in); fclose(out);                                
 
+    printf("\n=============================================");                     //
     printf("KOMPRESI SELESAI → %s\n", output);
 }
 
@@ -187,6 +188,7 @@ void decompressFile(const char *input, const char *output) {
     fclose(in);
     fclose(out);
 
+    printf("\n=============================================");                     //
     printf("DEKOMPRESI SELESAI → %s\n", output);
 }
 
