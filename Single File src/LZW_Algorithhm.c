@@ -1,3 +1,6 @@
+#include <windows.h>
+#include <commdlg.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -98,7 +101,7 @@ void compressFile(const char *input, const char *output) {
     free(dict[i]);                      //setiap malloc harus ada free
     fclose(in); fclose(out);                                
 
-    printf("KOMPRESI SELESAI → %s\n", output);
+    printf("KOMPRESI SELESAI %s\n", output);
 }
 
 //FUNGSI DECOMPRESS FILE: nanti akan dipanggil dibawah di bagian main                       
@@ -187,7 +190,7 @@ void decompressFile(const char *input, const char *output) {
     fclose(in);
     fclose(out);
 
-    printf("DEKOMPRESI SELESAI → %s\n", output);
+    printf("DEKOMPRESI SELESAI %s\n", output);
 }
 
 
